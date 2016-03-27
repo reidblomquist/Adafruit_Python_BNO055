@@ -24,6 +24,9 @@
 import logging
 import sys
 import time
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
 
 from Adafruit_BNO055 import BNO055
 
@@ -36,6 +39,26 @@ bno = BNO055.BNO055(serial_port='/dev/ttyAMA0', rst=18)
 # and RST connected to pin P9_12:
 #bno = BNO055.BNO055(rst='P9_12')
 
+# Config gpio button
+class Toggle:
+    enabled = False
+
+    def __init__(self, pin):
+        self.pin = pin
+        GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+    def readState(self):
+        input_state = GPIO.input(self.pin)
+	toggle_state = Toggle.enabled
+        if input_state == False and toggle_state == False:
+            Toggle.enabled = True
+        elif input_state == False and toggle_state == True:
+            Toggle.enabled = False
+
+    def printState(self):
+        print "Toggle is currently: %d" % Toggle.enabled
+
+toggle = Toggle(17)
 
 # Enable verbose debug logging if -v is passed as a parameter.
 if len(sys.argv) == 2 and sys.argv[1].lower() == '-v':
@@ -64,6 +87,8 @@ print('Gyroscope ID:       0x{0:02X}\n'.format(gyro))
 
 print('Reading BNO055 data, press Ctrl-C to quit...')
 while True:
+    toggle.readState()
+    toggle.printState()
     # Read the Euler angles for heading, roll, pitch (all in degrees).
     heading, roll, pitch = bno.read_euler()
     # Read the calibration status, 0=uncalibrated and 3=fully calibrated.
@@ -89,4 +114,4 @@ while True:
     # in meters per second squared):
     #x,y,z = bno.read_gravity()
     # Sleep for a second until the next reading.
-    time.sleep(1)
+    time.sleep(0.2)
